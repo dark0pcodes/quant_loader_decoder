@@ -22,20 +22,20 @@ URL_REGEX = (
 
 class Quant(object):
     @staticmethod
-    def load(filepath):
+    def load(filepath: str):
         with open(filepath, 'rb') as f:
             return f.read()
 
-    def __init__(self, filepath):
+    def __init__(self, filepath: str):
         self.binary = self.load(filepath)
         self.key = self.get_key()[1:].encode(encoding='utf-8') + b'\x00'
 
-    def decode(self, message):
-        result = ''
+    def decode(self, message: bytes):
+        result = list()
 
         for i in range(0, len(message)):
-            result += chr(ord(message[i]) - ord(self.key[i % len(self.key)]))
-        return result
+            result.append(message[i] - self.key[i % len(self.key)])
+        return bytes(result)
 
     def get_key(self):
         return re.findall(KEY_REGEX, self.binary.decode('latin1'))[0]
@@ -51,7 +51,7 @@ class Quant(object):
 
         for item in filtered:
             try:
-                tmp_decoded = self.decode(item)
+                tmp_decoded = self.decode(item).decode(encoding='utf-8')
                 url = re.match(URL_REGEX, tmp_decoded)
                 ver = re.match(VER_REGEX, tmp_decoded)
 
@@ -65,6 +65,6 @@ class Quant(object):
         return result
 
 a = Quant('quant_unpacked_0.exe')
-test = a.get_data()
+test1 = a.get_data()
 
 pass
