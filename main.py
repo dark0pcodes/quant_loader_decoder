@@ -1,7 +1,13 @@
+"""
+Quant Loader strings decoder
+
+Runs on Python 3
+"""
+
 import re
+import argparse
 
 KEY_REGEX = '([a-fA-F\d]{32})'
-VER_REGEX = '^(?=.+)(?:[1-9]\d*|0)?(?:\.\d+)?$'
 URL_REGEX = (
     # HTTP/HTTPS.
     "(https?:\\/\\/)"
@@ -40,31 +46,38 @@ class Quant(object):
     def get_key(self):
         return re.findall(KEY_REGEX, self.binary.decode('latin1'))[0]
 
-    def get_data(self):
+    def get_data(self, details):
         key_index = self.binary.find(self.key[:-1])
         hex_data = self.binary[key_index - 200:key_index + 7600].split(b'\x00')
         filtered = [j for j in hex_data if j != b'' and len(j) > 2]
-        result = {
-            'urls': list(),
-            'ver': 'N/A'
-        }
+        result = list()
 
         for item in filtered:
             try:
                 tmp_decoded = self.decode(item).decode(encoding='utf-8')
-                url = re.match(URL_REGEX, tmp_decoded)
-                ver = re.match(VER_REGEX, tmp_decoded)
+                if details != 'all':
+                    url = re.match(URL_REGEX, tmp_decoded)
 
-                if url:
-                    result['urls'].append(url.string)
-                if ver:
-                    result['ver'] = ver.string
+                    if url:
+                        result.append(url.string)
+                else:
+                    result.append(tmp_decoded)
             except ValueError:
                 continue
 
         return result
 
-a = Quant('quant_unpacked_0.exe')
-test1 = a.get_data()
 
-pass
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Quant Loader decoder")
+    parser.add_argument('--file', dest="path_file", default=None, help="File to analyze", required=True)
+    parser.add_argument('--details', dest="details", default='all', help="URL is to extract decode all the strings, "
+                                                                         "all otherwise", required=False)
+    args = parser.parse_args()
+
+    for item in Quant(args.path_file).get_data(args.details):
+        print(item)
+
+
+
+
